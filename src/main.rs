@@ -2,15 +2,17 @@ use std::env;
 use std::io;
 use std::io::prelude::*;
 use std::fs::File;
-use std::io::{Error, ErrorKind};
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::io::SeekFrom;
 
 const NT_GNU_BUILD_ID:u32 = 3;
 const NT_GO_BUILD_ID:u32 = 4;
+const MAG_ELF:(u8, u8, u8, u8) = (127, 69, 76, 70);
+const PT_NOTE:u32 = 4;
 
 fn main()  -> io::Result<()>{
     let v = env::args().collect::<Vec<String>>();
+    let mut res = String::from("");
     if let [_, elf_filename, ] = &v[..] {
         let mut f = File::open(elf_filename)?;
         let ei_mag0 = f.read_u8()?;
@@ -18,11 +20,11 @@ fn main()  -> io::Result<()>{
         let ei_mag2 = f.read_u8()?;
         let ei_mag3 = f.read_u8()?;
         let ei_class = f.read_u8()?;
-        let ei_data = f.read_u8()?;
-        let ei_version = f.read_u8()?;
-        let ei_osabi = f.read_u8()?;
-        let ei_abiversion = f.read_u8()?;
-        let ei_pad = f.read_u8()?;
+        let _ei_data = f.read_u8()?;
+        let _ei_version = f.read_u8()?;
+        let _ei_osabi = f.read_u8()?;
+        let _ei_abiversion = f.read_u8()?;
+        let _ei_pad = f.read_u8()?;
         f.read_u8()?;
         f.read_u8()?;
         f.read_u8()?;
@@ -30,7 +32,7 @@ fn main()  -> io::Result<()>{
         f.read_u8()?;
         f.read_u8()?;
 
-        if (ei_mag0, ei_mag1, ei_mag2, ei_mag3) != (127, 69, 76, 70) {
+        if (ei_mag0, ei_mag1, ei_mag2, ei_mag3) != MAG_ELF {
             panic!("Not an ELF file.")
         }
 
@@ -38,40 +40,40 @@ fn main()  -> io::Result<()>{
             panic!("Not an ELF64 file.")
         }
 
-        let e_type = f.read_u16::<LittleEndian>()?;
-        let e_machine = f.read_u16::<LittleEndian>()?;
-        let e_version = f.read_u32::<LittleEndian>()?;
-        let e_entry = f.read_u64::<LittleEndian>()?;
+        let _e_type = f.read_u16::<LittleEndian>()?;
+        let _e_machine = f.read_u16::<LittleEndian>()?;
+        let _e_version = f.read_u32::<LittleEndian>()?;
+        let _e_entry = f.read_u64::<LittleEndian>()?;
         let e_phoff = f.read_u64::<LittleEndian>()?;
-        let e_shoff = f.read_u64::<LittleEndian>()?;
-        let e_flags = f.read_u32::<LittleEndian>()?;
-        let e_ehsize = f.read_u16::<LittleEndian>()?;
-        let e_phentsize = f.read_u16::<LittleEndian>()?;
+        let _e_shoff = f.read_u64::<LittleEndian>()?;
+        let _e_flags = f.read_u32::<LittleEndian>()?;
+        let _e_ehsize = f.read_u16::<LittleEndian>()?;
+        let _e_phentsize = f.read_u16::<LittleEndian>()?;
         let e_phnum = f.read_u16::<LittleEndian>()?;
-        let e_shentsize = f.read_u16::<LittleEndian>()?;
-        let e_shnum = f.read_u16::<LittleEndian>()?;
-        let e_shstrndx = f.read_u16::<LittleEndian>()?;
+        let _e_shentsize = f.read_u16::<LittleEndian>()?;
+        let _e_shnum = f.read_u16::<LittleEndian>()?;
+        let _e_shstrndx = f.read_u16::<LittleEndian>()?;
 
         if e_phoff == 0 {
             panic!("Program headers not found.")
         }
 
         f.seek(SeekFrom::Start(e_phoff))?;
-        for idx in 0..e_phnum {
+        for _idx in 0..e_phnum {
             let p_type = f.read_u32::<LittleEndian>()?;
-            let p_flags = f.read_u32::<LittleEndian>()?;
+            let _p_flags = f.read_u32::<LittleEndian>()?;
             let p_offset = f.read_u64::<LittleEndian>()?;
-            let p_vaddr = f.read_u64::<LittleEndian>()?;
-            let p_paddr = f.read_u64::<LittleEndian>()?;
+            let _p_vaddr = f.read_u64::<LittleEndian>()?;
+            let _p_paddr = f.read_u64::<LittleEndian>()?;
             let p_filesz = f.read_u64::<LittleEndian>()?;
-            let p_memsz = f.read_u64::<LittleEndian>()?;
-            let p_align= f.read_u64::<LittleEndian>()?;
+            let _p_memsz = f.read_u64::<LittleEndian>()?;
+            let _p_align= f.read_u64::<LittleEndian>()?;
 
-            if p_type == 4 {
+            if p_type == PT_NOTE {
                 let p_end = p_offset + p_filesz;
-                f.seek(SeekFrom::Start(e_phoff))?;
+                f.seek(SeekFrom::Start(p_offset))?;
 
-                let mut n_type = 0;
+                let mut n_type:u32 = 0;
                 let mut pos = f.seek(SeekFrom::Current(0))?;
 
                 while n_type != NT_GNU_BUILD_ID && n_type != NT_GO_BUILD_ID && pos<=p_end {
@@ -94,10 +96,14 @@ fn main()  -> io::Result<()>{
                     let mut desc = vec![0u8; n_descsz as usize];
                     f.read(desc.as_mut_slice())?;
 
+                    let strs: Vec<String> = desc.iter()
+                               .map(|b| format!("{:02X}", b))
+                               .collect();
+                    res = strs.join("");
                     pos = f.seek(SeekFrom::Current(0))?;
                 }
                 if n_type != 0 {
-                    println!("{} = {} = {}", n_type, pos, p_end);
+                    println!("{}", res);
                     return Ok(())
                 }
             }
