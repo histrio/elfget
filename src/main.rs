@@ -3,9 +3,9 @@ use std::fs::File;
 use std::io;
 use std::io::prelude::*;
 use std::io::SeekFrom;
+use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use std::io::{Error, ErrorKind};
 
 const NT_GNU_BUILD_ID: u32 = 3;
 const NT_GO_BUILD_ID: u32 = 4;
@@ -19,8 +19,7 @@ struct Opt {
     file_name: PathBuf,
 }
 
-
-fn get_buildid(elf_filename:PathBuf) -> Result<String, io::Error> {
+fn get_buildid(elf_filename: PathBuf) -> Result<String, io::Error> {
     let mut res = String::from("");
     let mut f = File::open(elf_filename)?;
     let ei_mag0 = f.read_u8()?;
@@ -41,11 +40,17 @@ fn get_buildid(elf_filename:PathBuf) -> Result<String, io::Error> {
     f.read_u8()?;
 
     if (ei_mag0, ei_mag1, ei_mag2, ei_mag3) != MAG_ELF {
-        return Err(Error::new(ErrorKind::Other, "Not an ELF64 file: wrong header."));
+        return Err(Error::new(
+            ErrorKind::Other,
+            "Not an ELF64 file: wrong header.",
+        ));
     }
 
     if ei_class != 2 {
-        return Err(Error::new(ErrorKind::Other, "Not an ELF64 file: wrong class."));
+        return Err(Error::new(
+            ErrorKind::Other,
+            "Not an ELF64 file: wrong class.",
+        ));
     }
 
     let _e_type = f.read_u16::<LittleEndian>()?;
@@ -112,7 +117,10 @@ fn get_buildid(elf_filename:PathBuf) -> Result<String, io::Error> {
             }
         }
     }
-    return Err(Error::new(ErrorKind::Other, "Program header PT_NOTE with NT_GNU_BUILD_ID was not found."));
+    return Err(Error::new(
+        ErrorKind::Other,
+        "Program header PT_NOTE with NT_GNU_BUILD_ID was not found.",
+    ));
 }
 
 fn main() -> io::Result<()> {
