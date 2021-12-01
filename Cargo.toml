@@ -3,7 +3,7 @@ name = "elfget"
 version = "0.1.0"
 edition = "2021"
 authors = ["Rinat Sabitov <rinat.sabitov@gmail.com>"]
-description = "Manage KernelCare patches for your kernel"
+description = "Get data from an ELF file"
 license-file = "LICENSE.TXT"
 readme = "README.md"
 
