@@ -1,6 +1,6 @@
 [package]
 name = "elfget"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Rinat Sabitov <rinat.sabitov@gmail.com>"]
 description = "Get data from an ELF file"
