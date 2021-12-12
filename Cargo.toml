@@ -1,11 +1,13 @@
 [package]
 name = "elfget"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["Rinat Sabitov <rinat.sabitov@gmail.com>"]
 description = "Get data from an ELF file"
-license-file = "LICENSE.TXT"
+license-file = "GPL-2.0-or-later"
 readme = "README.md"
+homepage = "https://false.org.ru/elfget"
+repository = "https://github.com/histrio/elfget/"
 
 [dependencies]
 byteorder = "1.4.3"
