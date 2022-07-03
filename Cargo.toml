@@ -11,7 +11,7 @@ repository = "https://github.com/histrio/elfget/"
 
 [dependencies]
 byteorder = "1.4.3"
-structopt = "0.3.25"
+structopt = "0.3.26"
 
 [profile.release]
 opt-level = "z"  
